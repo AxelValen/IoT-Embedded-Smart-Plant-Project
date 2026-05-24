@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 Monitor</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #0f0; padding: 2rem; }
+    h1 { color: #0f0; }
+    #data { font-size: 1.4rem; margin-top: 1rem; }
+    .label { color: #888; }
+    .value { color: #0f0; font-size: 2rem; }
+    #dot { display: inline-block; width: 12px; height: 12px;
+           background: #0f0; border-radius: 50%; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h1><span id="dot"></span>ESP32 Live Monitor</h1>
+  <div id="data">Esperando datos...</div>
+  <script>
+    async function poll() {
+      try {
+        const res = await fetch('/data');
+        const d = await res.json();
+        if (d.timestamp) {
+          document.getElementById('data').innerHTML = `
+            <p><span class="label">Valor:</span><br>
+               <span class="value">${d.valor ?? '—'}</span></p>
+            <p><span class="label">Mensaje:</span> ${d.mensaje ?? '—'}</p>
+            <p><span class="label">Último update:</span> ${d.timestamp}</p>
+          `;
+        }
+      } catch(e) { /* servidor no disponible */ }
+    }
+    setInterval(poll, 1000);
+    poll();
+  </script>
+</body>
+</html>
