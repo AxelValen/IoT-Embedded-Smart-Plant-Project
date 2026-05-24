@@ -36,6 +36,7 @@ void connectMQTT() {
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Serial.begin(921600);
+  pinMode(LED_BUILTIN, OUTPUT);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
   Serial.println("Iniciando...");
@@ -44,7 +45,7 @@ void setup() {
 void loop() {
   // Manejo WiFi
   if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
-    digitalWrite(LED_BUILTIN, 1);
+    digitalWrite(LED_BUILTIN, HIGH);
     Serial.println("✅ WiFi conectado!");
     Serial.println(WiFi.localIP());
     wifiConnected = true;
