@@ -5,7 +5,7 @@
 #include "soc/soc.h"
 
 #define LED_BUILTIN 2
-#define WIFI_SSID     "Main Valen's Phone"
+#define WIFI_SSID     **WIFI_SSID**
 #define WIFI_PASSWORD **WIFI_PASSWORD**
 #define MQTT_BROKER   "172.20.10.3"   // IP local
 #define MQTT_PORT     1883
