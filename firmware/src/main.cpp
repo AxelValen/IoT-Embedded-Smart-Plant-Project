@@ -1,64 +1,81 @@
 #include <Arduino.h>
 #include <WiFi.h>
-#include <HTTPClient.h>
+#include <PubSubClient.h>
 #include "soc/rtc_cntl_reg.h"
 #include "soc/soc.h"
 
 #define LED_BUILTIN 2
 #define WIFI_SSID     **WIFI_SSID**
 #define WIFI_PASSWORD **WIFI_PASSWORD**
+#define MQTT_BROKER   "172.20.10.3"   // IP local
+#define MQTT_PORT     1883
+#define MQTT_TOPIC    "sensor/data"
 
-const char* serverIP = "172.20.10.3";  // IP local
+WiFiClient   wifiClient;
+PubSubClient mqtt(wifiClient);
 
-bool isConnected = false;
-int contador = 0;
-unsigned long lastSend = 0;
+bool wifiConnected = false;
+int  contador      = 0;
+unsigned long lastPublish = 0;
+
+void connectMQTT() {
+  while (!mqtt.connected()) {
+    Serial.print("Conectando al broker MQTT...");
+    // client ID único para este dispositivo
+    if (mqtt.connect("ESP32Client")) {
+      Serial.println(" ✅ conectado!");
+    } else {
+      Serial.print(" ❌ falló, rc=");
+      Serial.print(mqtt.state());
+      Serial.println(" reintentando en 2s");
+      delay(2000);
+    }
+  }
+}
 
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
-  Serial.begin(115200);
+  Serial.begin(921600);
   pinMode(LED_BUILTIN, OUTPUT);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.println("Conectando...");
+  mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+  Serial.println("Iniciando...");
 }
 
 void loop() {
-  // --- Manejo de conexión (no bloqueante) ---
-  if (WiFi.status() == WL_CONNECTED && !isConnected) {
-    Serial.println("✅ Conectado!");
-    Serial.print("IP del ESP32: ");
-    Serial.println(WiFi.localIP());
+  // Manejo WiFi
+  if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
     digitalWrite(LED_BUILTIN, HIGH);
-    isConnected = true;
+    Serial.println("✅ WiFi conectado!");
+    Serial.println(WiFi.localIP());
+    wifiConnected = true;
   }
-
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println(".");
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    wifiConnected = false;
     delay(1000);
-    isConnected = false;
-    return; // no intentes enviar si no hay conexión
+    return;
   }
 
-  // --- Envío de datos cada 2 segundos ---
-  if (millis() - lastSend >= 2000) {
-    lastSend = millis();
+  // Manejo MQTT
+  if (!mqtt.connected()) connectMQTT();
+  mqtt.loop(); // mantiene la conexión viva
 
-    HTTPClient http;
-    String url = String("http://") + serverIP + ":3000/data";
-    http.begin(url);
-    http.addHeader("Content-Type", "application/json");
+  // Publica cada 2 segundos
+  if (millis() - lastPublish >= 2000) {
+    lastPublish = millis();
 
+    // Arma el payload JSON manualmente
     String payload = "{\"valor\":" + String(contador) +
                      ",\"mensaje\":\"Hola desde ESP32\"}";
 
-    int httpCode = http.POST(payload);
-    Serial.print("📤 POST | HTTP ");
-    Serial.print(httpCode);
-    Serial.print(" | ");
+    mqtt.publish(MQTT_TOPIC, payload.c_str());
+    Serial.print("📤 Publicado en '");
+    Serial.print(MQTT_TOPIC);
+    Serial.print("': ");
     Serial.println(payload);
 
-    http.end();
     contador++;
   }
 }

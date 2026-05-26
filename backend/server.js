@@ -3,11 +3,16 @@
 /*
 ---- Comandos para activar el server: ----
 
-npm init -y -> para inicializar NodeJS (una sola vez, al inicio)
-npm install express -> para instalar el framework express (una sola vez, al inicio)
-node server.js -> para correr el servidor (cada vez)
+npm init -y          -> para inicializar NodeJS (una sola vez, al inicio)
+npm install express  -> para instalar el framework express (una sola vez, al inicio)
+node server.js       -> para correr el servidor (cada vez)
 
 *Nota*: seleccionar Command Prompt en la terminal par poder usar npm
+
+-- Para iniciar el broker MQTT (CMD en admin): --
+
+cd "C:\Program Files\mosquitto"
+mosquitto -c mosquitto.conf -v
 
 */
 
