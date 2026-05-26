@@ -22,8 +22,16 @@ const wss    = new WebSocket.Server({ server }); // WebSocket sobre el mismo pue
 
 app.use(express.static('public'));
 
+const brokerUrl = 'mqtts://rf11c1dd.ala.eu-central-1.emqxsl.com:**MQTT_PORT**';
+
+// 2. Pasamos las credenciales de EMQX
+const mqttOptions = {
+  username: 'axelvalen_mqtt_broker',
+  password: 'embedded_project'
+};
+
 // --- Conexión al broker MQTT ---
-const mqttClient = mqtt.connect('mqtt://localhost:1883');
+const mqttClient = mqtt.connect(brokerUrl, mqttOptions);
 
 mqttClient.on('connect', () => {
   console.log('✅ Conectado al broker Mosquitto');
