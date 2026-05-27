@@ -10,10 +10,14 @@
 #define WIFI_PASSWORD **WIFI_PASSWORD**
 #define MQTT_BROKER   **MQTT_BROKER_URL**
 #define MQTT_PORT     **MQTT_PORT**
-#define MQTT_TOPIC    "sensor/data"
-#define MQTT_TOPIC_CONTROL "control/led"
 #define MQTT_USERNAME **MQTT_USERNAME**
 #define MQTT_PASSWORD **MQTT_PASSWORD**  
+
+#define PLANT_TYPE    "tomate"
+String deviceID = WiFi.macAddress();
+String topicData    = "sensor/data/" + deviceID;
+String topicControl = "control/led/" + deviceID;
+String topicRegister = "device/register";
 
 WiFiClientSecure wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -28,7 +32,15 @@ void connectMQTT() {
     // client ID único para este dispositivo
     if (mqtt.connect("ESP32Client", MQTT_USERNAME, MQTT_PASSWORD)) {
       Serial.println(" ✅ conectado!");
-      mqtt.subscribe(MQTT_TOPIC_CONTROL);
+
+      mqtt.subscribe(topicControl.c_str());
+
+      // Publica un mensaje de registro con los atributos del dispositivo
+      String reg = "{\"device_id\":\"" + deviceID +
+               "\",\"plant_type\":\"" + String(PLANT_TYPE) +
+               "\",\"status\":\"online\"}";
+
+      mqtt.publish(topicRegister.c_str(), reg.c_str());
     } else {
       Serial.print(" ❌ falló, rc=");
       Serial.print(mqtt.state());
@@ -47,7 +59,7 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
   Serial.print("]: ");
   Serial.println(message);
 
-  if (String(topic) == MQTT_TOPIC_CONTROL) {
+  if (String(topic) == topicControl.c_str()) {
     if (message == "LED_ON") {
       digitalWrite(LED_BUILTIN, HIGH);
       Serial.println("💡 LED encendido");
@@ -92,14 +104,15 @@ void loop() {
   // Publica cada 2 segundos
   if (millis() - lastPublish >= 2000) {
     lastPublish = millis();
-    int data = random(10,20);
+    int data = random(10,40);
+    
     // Arma el payload JSON manualmente
     String payload = "{\"valor\":" + String(data) +
                      ",\"mensaje\":\"Hola desde ESP32\"}";
 
-    mqtt.publish(MQTT_TOPIC, payload.c_str());
+    mqtt.publish(topicData.c_str(), payload.c_str());
     Serial.print("📤 Publicado en '");
-    Serial.print(MQTT_TOPIC);
+    Serial.print(topicData.c_str());
     Serial.print("': ");
     Serial.println(payload);
 
