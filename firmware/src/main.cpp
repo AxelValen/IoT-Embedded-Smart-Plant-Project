@@ -11,10 +11,11 @@
 #define MQTT_BROKER   **MQTT_BROKER_URL**
 #define MQTT_PORT     **MQTT_PORT**
 #define MQTT_TOPIC    "sensor/data"
+#define MQTT_TOPIC_CONTROL "control/led"
 #define MQTT_USERNAME **MQTT_USERNAME**
 #define MQTT_PASSWORD **MQTT_PASSWORD**  
 
-WiFiClientSecure wifiClient;  // 
+WiFiClientSecure wifiClient;
 PubSubClient mqtt(wifiClient);
 
 bool wifiConnected = false;
@@ -27,6 +28,7 @@ void connectMQTT() {
     // client ID único para este dispositivo
     if (mqtt.connect("ESP32Client", MQTT_USERNAME, MQTT_PASSWORD)) {
       Serial.println(" ✅ conectado!");
+      mqtt.subscribe(MQTT_TOPIC_CONTROL);
     } else {
       Serial.print(" ❌ falló, rc=");
       Serial.print(mqtt.state());
@@ -36,28 +38,47 @@ void connectMQTT() {
   }
 }
 
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  String message;
+  for (int i = 0; i < length; i++) message += (char)payload[i];
+
+  Serial.print("📩 Comando recibido [");
+  Serial.print(topic);
+  Serial.print("]: ");
+  Serial.println(message);
+
+  if (String(topic) == MQTT_TOPIC_CONTROL) {
+    if (message == "LED_ON") {
+      digitalWrite(LED_BUILTIN, HIGH);
+      Serial.println("💡 LED encendido");
+    } else if (message == "LED_OFF") {
+      digitalWrite(LED_BUILTIN, LOW);
+      Serial.println("💡 LED apagado");
+    }
+  }
+}
+
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0);
   Serial.begin(921600);
-  pinMode(LED_BUILTIN, OUTPUT);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   wifiClient.setInsecure();
   mqtt.setServer(MQTT_BROKER, MQTT_PORT);
+  mqtt.setCallback(mqttCallback);
   Serial.println("Iniciando...");
 }
 
 void loop() {
   // Manejo WiFi
   if (WiFi.status() == WL_CONNECTED && !wifiConnected) {
-    digitalWrite(LED_BUILTIN, HIGH);
+    //digitalWrite(LED_BUILTIN, HIGH);
     Serial.println("✅ WiFi conectado!");
-    digitalWrite(LED_BUILTIN, HIGH);
     Serial.println(WiFi.localIP());
     wifiConnected = true;
   }
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println(".");
-    digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+    //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     wifiConnected = false;
     delay(1000);
     return;
