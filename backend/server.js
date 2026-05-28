@@ -18,6 +18,11 @@ mosquitto -c mosquitto.conf -v
 
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+const mongoose = require('mongoose');
+const SensorReading = require('./models/SensorReading');
+const WateringEvent = require('./models/WateringEvent');
+
 const express   = require('express');
 const mqtt      = require('mqtt');
 const WebSocket = require('ws');
@@ -29,6 +34,10 @@ const wss    = new WebSocket.Server({ server }); // WebSocket sobre el mismo pue
 
 app.use(express.json());
 app.use(express.static('public'));
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ Conectado a MongoDB'))
+  .catch(err => console.error('❌ Error MongoDB:', err));
 
 // --- Conexión al broker MQTT ---
 const mqttClient = mqtt.connect(process.env.MQTT_BROKER_URL, {
@@ -70,7 +79,7 @@ wss.on('connection', (ws) => {
 });
 
 // Cuando llega un mensaje MQTT, lo reenvía a todos los navegadores conectados
-mqttClient.on('message', (topic, message) => {
+mqttClient.on('message', async (topic, message) => {
   let payload;
   try {
     payload = JSON.parse(message.toString());
@@ -94,6 +103,14 @@ mqttClient.on('message', (topic, message) => {
 
   } else if (topic.startsWith('sensor/data/')) {
     const deviceID = topic.split('/')[2];   // extrae el ID del topic
+
+    await SensorReading.create({
+      device_id:  deviceID,
+      plant_type: devices.get(deviceID)?.plant_type,
+      valor:      payload.valor,
+      mensaje:    payload.mensaje
+    });
+
     broadcastToClients({ type: 'sensor_data', device_id: deviceID, ...payload });
   }
 });
