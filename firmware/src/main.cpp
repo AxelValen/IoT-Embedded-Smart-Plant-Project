@@ -41,7 +41,7 @@ void connectMQTT() {
                "\",\"plant_type\":\"" + String(PLANT_TYPE) +
                "\",\"status\":\"online\"}";
 
-      mqtt.publish(topicRegister.c_str(), reg.c_str());
+      mqtt.publish(topicRegister.c_str(), reg.c_str(), true);
     } else {
       Serial.print(" ❌ falló, rc=");
       Serial.print(mqtt.state());
@@ -114,10 +114,10 @@ void loop() {
   // Publica cada 2 segundos
   if (millis() - lastPublish >= 2000) {
     lastPublish = millis();
-    int data = random(10,40);
+    int data = random(50,90);
     
     // Arma el payload JSON manualmente
-    String payload = "{\"valor\":" + String(data) +
+    String payload = "{\"humidity\":" + String(data) +
                      ",\"mensaje\":\"Hola desde ESP32\"}";
 
     mqtt.publish(topicData.c_str(), payload.c_str());
