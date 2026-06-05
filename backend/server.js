@@ -1,23 +1,6 @@
-// Mi IP: 172.20.10.3
-
-/*
----- Comandos para activar el server: ----
-
-npm init -y          -> para inicializar NodeJS (una sola vez, al inicio)
-npm install express  -> para instalar el framework express (una sola vez, al inicio)
-node server.js       -> para correr el servidor (cada vez)
-
-*Nota*: seleccionar Command Prompt en la terminal par poder usar npm
-
--- Para iniciar el broker MQTT (CMD en admin): --
-
-cd "C:\Program Files\mosquitto"
-mosquitto -c mosquitto.conf -v
-
-*/
-
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const frontendPath = path.join(__dirname, '../frontend');
 
 const mongoose = require('mongoose');
 const Device        = require('./models/Device');
@@ -35,7 +18,7 @@ const server = http.createServer(app);
 const wss    = new WebSocket.Server({ server }); // WebSocket sobre el mismo puerto
 
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(frontendPath));
 
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Conectado a MongoDB'))
